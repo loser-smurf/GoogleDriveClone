@@ -15,6 +15,7 @@ async fn main() -> std::io::Result<()> {
             web::scope("/api/files")
                 .route("", web::get().to(handlers::files::list_files))
                 .route("", web::post().to(handlers::files::upload_file))
+                .route("/{id}", web::get().to(handlers::files::download_file))
                 .route("/{id}", web::delete().to(handlers::files::delete_file)),
         )
     })
