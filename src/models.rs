@@ -1,6 +1,6 @@
 use chrono::NaiveDateTime;
-use serde::{Serialize, Deserialize};
 use diesel::{Insertable, Queryable};
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Queryable)]
 pub struct File {
