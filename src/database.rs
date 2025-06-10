@@ -1,5 +1,5 @@
 use diesel::prelude::*;
-use diesel::r2d2::{ConnectionManager, Pool};
+use diesel::r2d2::{ConnectionManager, Pool, PooledConnection};
 use dotenv::dotenv;
 use std::env;
 
@@ -12,5 +12,16 @@ pub fn create_pool() -> DbPool {
 
     Pool::builder()
         .build(manager)
-        .expect("Failed to create database")
+        .expect("Failed to create database pool")
+}
+
+pub fn get_db_conn(
+    pool: &DbPool,
+) -> Result<PooledConnection<ConnectionManager<PgConnection>>, diesel::result::Error> {
+    pool.get().map_err(|e| {
+        diesel::result::Error::DatabaseError(
+            diesel::result::DatabaseErrorKind::UnableToSendCommand,
+            Box::new(format!("DB pool error: {}", e)),
+        )
+    })
 }
