@@ -2,6 +2,11 @@ use chrono::NaiveDateTime;
 use diesel::{Insertable, Queryable};
 use serde::{Deserialize, Serialize};
 
+#[derive(Debug, Deserialize)]
+pub struct SearchQuery {
+    pub q: String,
+}
+
 #[derive(Serialize, Queryable)]
 pub struct File {
     pub id: i32,

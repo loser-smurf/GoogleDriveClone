@@ -1,7 +1,7 @@
 use actix_web::{Error, HttpResponse, web};
-use crate::repo::files::{delete_file_by_id, find_file_by_id, insert_file, load_all_files};
+use crate::repo::files::{delete_file_by_id, find_file_by_id, insert_file, load_all_files, find_files_by_name, get_file_metadata};
 use crate::storage::FilesStorage;
-use crate::{database::DbPool, models::NewFile};
+use crate::{database::DbPool, models::{NewFile, SearchQuery}};
 
 /// GET /api/files
 /// Returns a list of all uploaded files with metadata.
@@ -10,6 +10,45 @@ pub async fn list_files(pool: web::Data<DbPool>) -> Result<HttpResponse, Error> 
         .map_err(|e| actix_web::error::ErrorInternalServerError(format!("DB error: {}", e)))?;
 
     Ok(HttpResponse::Ok().json(files_list))
+}
+
+/// GET api/file/{id}/meta 
+/// Returns file metadata without storage path.
+pub async fn get_metadata(
+    pool: web::Data<DbPool>,
+    file_id: web::Path<i32>,
+) -> Result<HttpResponse, Error> {
+    let (name, mime_type, size, created_at) = get_file_metadata(&pool, file_id.into_inner())
+        .map_err(|e| {
+            match e {
+                diesel::result::Error::NotFound => {
+                    actix_web::error::ErrorNotFound("File not found")
+                }
+                _ => actix_web::error::ErrorInternalServerError(
+                    format!("Database error: {}", e)
+                ),
+            }
+        })?;
+
+    Ok(HttpResponse::Ok().json(serde_json::json!({
+        "name": name,
+        "mime_type": mime_type,
+        "size": size,
+        "created_at": created_at.format("%Y-%m-%d %H:%M:%S").to_string(),
+    })))
+}
+
+/// GET /api/files/search
+/// Searches files by name with pagination
+pub async fn search_files(
+    pool: web::Data<DbPool>,
+    query: web::Query<SearchQuery>,
+) -> Result<HttpResponse, Error> {
+    match find_files_by_name(&pool, &query.q) {
+        Ok(files) => Ok(HttpResponse::Ok().json(files)),
+        Err(e) => Ok(HttpResponse::InternalServerError()
+            .json(format!("Database error: {}", e))),
+    }
 }
 
 /// POST /api/files

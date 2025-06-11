@@ -30,3 +30,27 @@ pub fn delete_file_by_id(pool: &DbPool, file_id_val: i32) -> Result<usize, diese
 
     diesel::delete(files.filter(id.eq(file_id_val))).execute(&mut conn)
 }
+
+/// Finds file by name 
+pub fn find_files_by_name(
+    pool: &DbPool, searc_query: &str
+) -> Result<Vec<File>, diesel::result::Error> {
+    let mut conn = get_db_conn(pool)?;
+
+    files
+        .filter(name.ilike(format!("%{}%", searc_query)))
+        .load::<File>(&mut conn)
+}
+
+/// Gets file metadata without the storage path (for public access)
+pub fn get_file_metadata(
+    pool: &DbPool, 
+    file_id_val: i32
+) -> Result<(String, Option<String>, i64, chrono::NaiveDateTime), diesel::result::Error> {
+    let mut conn = get_db_conn(pool)?;
+    
+    files
+        .filter(id.eq(file_id_val))
+        .select((name, mime_type, size, created_at))
+        .first::<(String, Option<String>, i64, chrono::NaiveDateTime)>(&mut conn)
+}

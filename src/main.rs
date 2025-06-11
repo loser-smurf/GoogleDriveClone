@@ -24,7 +24,9 @@ async fn main() -> std::io::Result<()> {
                     .route("", web::get().to(handlers::files::list_files))
                     .route("", web::post().to(handlers::files::upload_file))
                     .route("/{id}", web::get().to(handlers::files::download_file))
-                    .route("/{id}", web::delete().to(handlers::files::delete_file)),
+                    .route("/{id}", web::delete().to(handlers::files::delete_file))
+                    .route("/{id}/meta", web::get().to(handlers::files::get_metadata))
+                    .route("/search", web::get().to(handlers::files::search_files))
             )
     })
     .bind("127.0.0.1:8080")?
