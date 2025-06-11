@@ -1,7 +1,11 @@
-use actix_web::{Error, HttpResponse, web};
-use crate::repo::files::{delete_file_by_id, find_file_by_id, insert_file, load_all_files, find_files_by_name, get_file_metadata};
+use crate::repositories::files::{
+    delete_file_by_id, find_file_by_id, find_files_by_name, get_file_metadata, insert_file,
+    load_all_files,
+};
 use crate::storage::FilesStorage;
-use crate::{database::DbPool, models::{NewFile, SearchQuery}};
+use crate::{database::DbPool, models::files::NewFile, requests::query::SearchQuery};
+use actix_web::{Error, HttpResponse, web};
+use mime_guess::from_path;
 
 /// GET /api/files
 /// Returns a list of all uploaded files with metadata.
@@ -12,22 +16,16 @@ pub async fn list_files(pool: web::Data<DbPool>) -> Result<HttpResponse, Error> 
     Ok(HttpResponse::Ok().json(files_list))
 }
 
-/// GET api/file/{id}/meta 
+/// GET api/file/{id}/meta
 /// Returns file metadata without storage path.
 pub async fn get_metadata(
     pool: web::Data<DbPool>,
     file_id: web::Path<i32>,
 ) -> Result<HttpResponse, Error> {
     let (name, mime_type, size, created_at) = get_file_metadata(&pool, file_id.into_inner())
-        .map_err(|e| {
-            match e {
-                diesel::result::Error::NotFound => {
-                    actix_web::error::ErrorNotFound("File not found")
-                }
-                _ => actix_web::error::ErrorInternalServerError(
-                    format!("Database error: {}", e)
-                ),
-            }
+        .map_err(|e| match e {
+            diesel::result::Error::NotFound => actix_web::error::ErrorNotFound("File not found"),
+            _ => actix_web::error::ErrorInternalServerError(format!("Database error: {}", e)),
         })?;
 
     Ok(HttpResponse::Ok().json(serde_json::json!({
@@ -46,8 +44,7 @@ pub async fn search_files(
 ) -> Result<HttpResponse, Error> {
     match find_files_by_name(&pool, &query.q) {
         Ok(files) => Ok(HttpResponse::Ok().json(files)),
-        Err(e) => Ok(HttpResponse::InternalServerError()
-            .json(format!("Database error: {}", e))),
+        Err(e) => Ok(HttpResponse::InternalServerError().json(format!("Database error: {}", e))),
     }
 }
 
@@ -59,19 +56,31 @@ pub async fn upload_file(
     payload: web::Payload,
     req: actix_web::HttpRequest,
 ) -> Result<HttpResponse, Error> {
-    let (original_name, file_path, size, mime_type) = storage.save_file(&req, payload).await?;
+    // Save the uploaded file using the storage service
+    let (original_name, file_path, size, _mime_type_from_save, user_id_opt) =
+        storage.save_file(&req, payload).await?;
 
-    // Create new file record
+    // Determine the MIME type based on the file extension
+    let mime_type = from_path(&original_name)
+        .first()
+        .map(|m| m.to_string())
+        .unwrap_or_else(|| "application/octet-stream".to_string());
+
+    // Create a new file record with metadata
     let new_file = NewFile {
         name: original_name,
         storage_path: file_path.to_string_lossy().to_string(),
         size,
-        mime_type,
+        mime_type: Some(mime_type),
+        user_id: user_id_opt,
     };
 
-    // Save file metadata to database
-    insert_file(&pool, &new_file).unwrap();
+    // Insert the file metadata into the database, handling possible errors
+    insert_file(&pool, &new_file).map_err(|e| {
+        actix_web::error::ErrorInternalServerError(format!("DB insert error: {}", e))
+    })?;
 
+    // Return success response
     Ok(HttpResponse::Ok().json("File uploaded successfully"))
 }
 
@@ -89,7 +98,7 @@ pub async fn delete_file(
     storage.delete_file(&file.storage_path).map_err(|e| {
         actix_web::error::ErrorInternalServerError(format!("Failed to delete file: {}", e))
     })?;
-    
+
     // Delete record from database
     delete_file_by_id(&pool, file.id).map_err(|e| {
         actix_web::error::ErrorInternalServerError(format!("DB delete error: {}", e))
@@ -109,7 +118,6 @@ pub async fn download_file(
     let file = find_file_by_id(&pool, file_id.into_inner())
         .map_err(|e| actix_web::error::ErrorNotFound(format!("File not found: {}", e)))?;
 
-  
     let tokio_file = tokio::fs::File::open(&file.storage_path)
         .await
         .map_err(|e| {

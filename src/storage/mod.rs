@@ -1,3 +1,4 @@
+use actix_web::HttpMessage;
 use actix_web::{Error, HttpRequest};
 use futures_util::StreamExt;
 use mime_guess::from_path;
@@ -21,7 +22,7 @@ impl FilesStorage {
         &self,
         req: &HttpRequest,
         mut payload: actix_web::web::Payload,
-    ) -> Result<(String, PathBuf, i64, Option<String>), Error> {
+    ) -> Result<(String, PathBuf, i64, Option<String>, Option<i32>), Error> {
         // Ensure upload directory exists
         self.ensure_upload_dir_exists().map_err(|e| {
             actix_web::error::ErrorInternalServerError(format!(
@@ -76,7 +77,16 @@ impl FilesStorage {
             .map(|s| s.to_string())
             .or_else(|| from_path(original_name).first().map(|m| m.to_string()));
 
-        Ok((original_name.to_string(), file_path, bytes, mime_type_val))
+        // Extract user_id from request extensions, if available
+        let user_id = req.extensions().get::<i32>().copied();
+
+        Ok((
+            original_name.to_string(),
+            file_path,
+            bytes,
+            mime_type_val,
+            user_id,
+        ))
     }
 
     pub fn delete_file(&self, file_path: impl AsRef<Path>) -> io::Result<()> {
