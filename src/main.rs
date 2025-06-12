@@ -37,10 +37,14 @@ async fn main() -> std::io::Result<()> {
             )
             .service(
                 web::scope("/auth")
-                    .route("/google", web::get().to(handlers::users::google_auth))
+                    .route("/google", web::get().to(auth::google::google_auth))
                     .route(
                         "/google/callback",
-                        web::get().to(handlers::users::google_callback),
+                        web::get().to(auth::google::google_callback),
+                    )
+                    .route(
+                        "/protected",
+                        web::post().to(handlers::users::protected_route),
                     ),
             )
     })
