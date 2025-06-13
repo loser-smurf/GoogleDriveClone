@@ -1,4 +1,4 @@
-use crate::auth::jwt::{create_jwt};
+use crate::auth::jwt::create_jwt;
 use crate::database::DbPool;
 use crate::models::users::NewUser;
 use crate::repositories::users::{find_user_by_oauth, insert_user};

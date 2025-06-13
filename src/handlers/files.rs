@@ -4,6 +4,7 @@ use crate::repositories::files::{
 };
 use crate::storage::FilesStorage;
 use crate::{database::DbPool, models::files::NewFile, requests::query::SearchQuery};
+use crate::auth::jwt::AuthenticatedUser;
 use actix_web::{Error, HttpResponse, web};
 use mime_guess::from_path;
 
@@ -54,10 +55,11 @@ pub async fn upload_file(
     pool: web::Data<DbPool>,
     storage: web::Data<FilesStorage>,
     payload: web::Payload,
+    user: AuthenticatedUser,
     req: actix_web::HttpRequest,
 ) -> Result<HttpResponse, Error> {
     // Save the uploaded file using the storage service
-    let (original_name, file_path, size, _mime_type_from_save, user_id_opt) =
+    let (original_name, file_path, size, _mime_type_from_save) =
         storage.save_file(&req, payload).await?;
 
     // Determine the MIME type based on the file extension
@@ -72,7 +74,7 @@ pub async fn upload_file(
         storage_path: file_path.to_string_lossy().to_string(),
         size,
         mime_type: Some(mime_type),
-        user_id: user_id_opt,
+        user_id: user.user_id,
     };
 
     // Insert the file metadata into the database, handling possible errors
@@ -90,9 +92,15 @@ pub async fn delete_file(
     pool: web::Data<DbPool>,
     storage: web::Data<FilesStorage>,
     file_id: web::Path<i32>,
+    user: AuthenticatedUser,
 ) -> Result<HttpResponse, Error> {
     let file = find_file_by_id(&pool, file_id.into_inner())
         .map_err(|e| actix_web::error::ErrorNotFound(format!("File not found: {}", e)))?;
+        
+    // Check that the file belongs to the authenticated user
+    if file.user_id.as_ref() != user.user_id {
+        return Err(actix_web::error::ErrorForbidden("You do not own this file"));
+    }
 
     // Delete file from filesystem
     storage.delete_file(&file.storage_path).map_err(|e| {

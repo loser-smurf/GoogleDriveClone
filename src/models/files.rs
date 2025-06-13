@@ -10,7 +10,7 @@ pub struct File {
     pub size: i64,
     pub mime_type: Option<String>,
     pub created_at: NaiveDateTime,
-    pub user_id: Option<i32>,
+    pub user_id: String,
 }
 
 #[derive(Insertable)]
@@ -20,5 +20,5 @@ pub struct NewFile {
     pub storage_path: String,
     pub size: i64,
     pub mime_type: Option<String>,
-    pub user_id: Option<i32>,
+    pub user_id: String,
 }

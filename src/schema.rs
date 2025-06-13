@@ -11,7 +11,7 @@ diesel::table! {
         #[max_length = 100]
         mime_type -> Nullable<Varchar>,
         created_at -> Timestamp,
-        user_id -> Nullable<Int4>,
+        user_id -> Varchar,
     }
 }
 
@@ -27,6 +27,7 @@ diesel::table! {
     }
 }
 
-diesel::joinable!(files -> users (user_id));
-
-diesel::allow_tables_to_appear_in_same_query!(files, users,);
+diesel::allow_tables_to_appear_in_same_query!(
+    files,
+    users,
+);
