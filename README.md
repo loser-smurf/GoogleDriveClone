@@ -35,7 +35,6 @@ DATABASE_URL=postgres://user:password@localhost/dbname
 CLIENT_ID=your_google_client_id
 CLIENT_SECRET=your_google_client_secret
 REDIRECT_URI=http://localhost:8080/auth/google/callback
-UPLOAD_DIR=./uploads
 JWT_SECRET=super_secret_key
 ```
 
@@ -190,7 +189,6 @@ DATABASE_URL=postgres://user:password@localhost/dbname
 CLIENT_ID=your_google_client_id
 CLIENT_SECRET=your_google_client_secret
 REDIRECT_URI=http://localhost:8080/auth/google/callback
-UPLOAD_DIR=./uploads
 JWT_SECRET=super_secret_key
 ```
 

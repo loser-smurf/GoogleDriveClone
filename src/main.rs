@@ -15,6 +15,8 @@ mod storage;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    env_logger::init();
+
     dotenv::dotenv().ok();
 
     let pool = database::create_pool();

@@ -76,12 +76,7 @@ impl FilesStorage {
             .map(|s| s.to_string())
             .or_else(|| from_path(original_name).first().map(|m| m.to_string()));
 
-        Ok((
-            original_name.to_string(),
-            file_path,
-            bytes,
-            mime_type_val,
-        ))
+        Ok((original_name.to_string(), file_path, bytes, mime_type_val))
     }
 
     pub fn delete_file(&self, file_path: impl AsRef<Path>) -> io::Result<()> {

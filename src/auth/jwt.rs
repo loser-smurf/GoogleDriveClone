@@ -1,7 +1,7 @@
 use actix_web::{Error, HttpRequest};
 use futures_util::future::{Ready, ready};
-use jsonwebtoken::{encode, decode, DecodingKey, EncodingKey, Header, Validation};
-use serde::{Serialize, Deserialize};
+use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
+use serde::{Deserialize, Serialize};
 use std::env;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -25,14 +25,19 @@ pub fn create_jwt(user_id: &str) -> Result<String, jsonwebtoken::errors::Error> 
     let expiration = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .expect("time went backwards")
-        .as_secs() + 60 * 60 * 24;
+        .as_secs()
+        + 60 * 60 * 24;
 
     let claims = Claims {
         sub: user_id.to_owned(),
         exp: expiration as usize,
     };
 
-    encode(&Header::default(), &claims, &EncodingKey::from_secret(&jwt_secret()))
+    encode(
+        &Header::default(),
+        &claims,
+        &EncodingKey::from_secret(&jwt_secret()),
+    )
 }
 
 /// Validates the JWT token and returns the user_id (subject) if valid.
