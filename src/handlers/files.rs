@@ -3,21 +3,24 @@ use crate::repositories::files::{
     delete_file_by_id, find_file_by_id, find_files_by_name, get_file_metadata, insert_file,
     load_all_files,
 };
-use crate::storage::FilesStorage;
+use crate::storage::{FilesStorage, S3Storage};
 use crate::{database::DbPool, models::files::NewFile, requests::query::SearchQuery};
 use actix_web::{Error, HttpResponse, web};
 use log::{debug, error, info, warn};
 use mime_guess::from_path;
 
 /// GET /api/files
-/// Returns a list of all uploaded files with metadata.
-pub async fn list_files(pool: web::Data<DbPool>) -> Result<HttpResponse, Error> {
-    info!("Fetching all uploaded files");
-    let files_list = load_all_files(&pool).map_err(|e| {
-        error!("DB error while loading files: {}", e);
-        actix_web::error::ErrorInternalServerError(format!("DB error: {}", e))
+/// Returns a list of all files stored in S3 bucket.
+pub async fn list_files(storage_s3: web::Data<S3Storage>) -> Result<HttpResponse, Error> {
+    info!("Fetching all files from S3 bucket");
+    
+    // Get files from S3
+    let s3_files = storage_s3.load_all_files().await.map_err(|e| {
+        error!("S3 error while loading files: {}", e);
+        actix_web::error::ErrorInternalServerError(format!("S3 error: {}", e))
     })?;
-    Ok(HttpResponse::Ok().json(files_list))
+
+    Ok(HttpResponse::Ok().json(s3_files))
 }
 
 /// GET api/file/{id}/meta

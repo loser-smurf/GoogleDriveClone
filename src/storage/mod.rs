@@ -104,6 +104,17 @@ impl S3Storage {
         }
     }
 
+    pub async fn load_all_files(&self) -> Result<Vec<String>, Error> {
+        let response = self
+            .client
+            .list_objects_v2()
+            .bucket(&self.bucket_name)
+            .send()
+            .await
+            .map_err(|e| actix_web::error::ErrorInternalServerError(format!("S3 list objects error: {}", e)))?;
+        Ok(response.contents.unwrap_or_default().iter().map(|o| o.key.clone().unwrap_or_default()).collect())
+    }
+    
     pub async fn save_file(
         &self,
         req: &HttpRequest,
