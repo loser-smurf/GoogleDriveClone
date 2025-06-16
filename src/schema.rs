@@ -6,19 +6,12 @@ diesel::table! {
         #[max_length = 255]
         name -> Varchar,
         #[max_length = 255]
-        s3_key -> Varchar,  // S3 object key (path in bucket)
-        #[max_length = 255]
-        bucket_name -> Varchar,  // S3 bucket name
+        storage_path -> Varchar,
         size -> Int8,
         #[max_length = 100]
         mime_type -> Nullable<Varchar>,
         created_at -> Timestamp,
-        last_modified -> Timestamp,  // Last modified time in S3
         user_id -> Varchar,
-        #[max_length = 255]
-        etag -> Nullable<Varchar>,  // S3 ETag for versioning
-        #[max_length = 50]
-        storage_class -> Nullable<Varchar>,  // S3 storage class (STANDARD, GLACIER, etc.)
     }
 }
 
@@ -34,4 +27,25 @@ diesel::table! {
     }
 }
 
-diesel::allow_tables_to_appear_in_same_query!(files, users,);
+diesel::table! {
+    s3_files (file_id) {
+        file_id -> Int4,
+        #[max_length = 255]
+        bucket -> Varchar,
+        #[max_length = 255]
+        region -> Varchar,
+        #[max_length = 1024]
+        s3_key -> Varchar,
+        #[max_length = 255]
+        etag -> Nullable<Varchar>,
+    }
+}
+
+diesel::joinable!(s3_files -> files (file_id));
+
+diesel::allow_tables_to_appear_in_same_query!(
+    files,
+    users,
+    s3_files,
+);
+
