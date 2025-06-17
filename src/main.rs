@@ -1,16 +1,13 @@
 use crate::auth::google::GoogleOAuthClient;
-use crate::config::UPLOAD_DIR;
-use crate::storage::FilesStorage;
 use crate::storage::S3Storage;
-use aws_sdk_s3::Client;
+use actix_web::{App, HttpServer, web};
 use aws_config::BehaviorVersion;
 use aws_config::meta::region::RegionProviderChain;
+use aws_sdk_s3::Client;
 use aws_sdk_s3::config::Region;
-use actix_web::{App, HttpServer, web};
 use std::env;
 
 mod auth;
-mod config;
 mod database;
 mod handlers;
 mod models;
@@ -25,8 +22,9 @@ async fn main() -> std::io::Result<()> {
 
     dotenv::dotenv().ok();
 
-    let region_provider = RegionProviderChain::default_provider()
-        .or_else(Region::new(env::var("AWS_REGION").unwrap_or_else(|_| "eu-north-1".to_string())));
+    let region_provider = RegionProviderChain::default_provider().or_else(Region::new(
+        env::var("AWS_REGION").unwrap_or_else(|_| "eu-north-1".to_string()),
+    ));
 
     let config = aws_config::defaults(BehaviorVersion::latest())
         .region(region_provider)
@@ -37,17 +35,12 @@ async fn main() -> std::io::Result<()> {
     let baucket_name = env::var("AWS_BUCKET_NAME").unwrap_or_else(|_| "file-storage".to_string());
     let storage_s3 = S3Storage::new(client, baucket_name);
 
-
-    let storage = FilesStorage::new(UPLOAD_DIR);
-
-
     let pool = database::create_pool();
     let oauth_client = web::Data::new(GoogleOAuthClient::new());
 
     HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(pool.clone()))
-            .app_data(web::Data::new(storage.clone()))
             .app_data(web::Data::new(storage_s3.clone()))
             .app_data(oauth_client.clone())
             .service(
