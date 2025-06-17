@@ -30,14 +30,9 @@ diesel::table! {
 diesel::table! {
     s3_files (file_id) {
         file_id -> Int4,
-        #[max_length = 255]
-        bucket -> Varchar,
-        #[max_length = 255]
-        region -> Varchar,
-        #[max_length = 1024]
         s3_key -> Varchar,
-        #[max_length = 255]
         etag -> Nullable<Varchar>,
+        user_id -> Varchar,
     }
 }
 
