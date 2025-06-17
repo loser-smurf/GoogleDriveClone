@@ -1,12 +1,12 @@
 # 📁 File Sharing API with Google OAuth (Rust + Actix Web)
 
-This is a file-sharing backend written in Rust. It supports file upload, download, metadata, deletion, and Google OAuth 2.0 authentication.
+This is a file-sharing backend written in Rust. It supports file upload, download, metadata, deletion, and Google OAuth 2.0 authentication.  
 
 ---
 
 ## 🚀 Features
 
-- 📥 Upload files to disk and store metadata in DB  
+- 📥 Upload files to AWS S3 and store metadata in DB
 - 📤 Download files with correct headers  
 - 🔍 Search files by name  
 - 🗑️ Delete only own files  
@@ -153,18 +153,26 @@ curl -X POST http://localhost:8080/api/files \
      -H "Cookie: auth_token=your_jwt_here" \
      -F "file=@path/to/yourfile.png"
 ```
+---
+
+## 🆕 What's New
+
+- Switched file storage from local disk to **AWS S3**
+- File metadata is now stored and managed via database
+- Added permission checks for file deletion (only owners can delete)
+- Improved MIME type handling
 
 ---
 
 # 📁 API для обмена файлами с Google OAuth (Rust + Actix Web)
 
-Это backend для обмена файлами на Rust. Поддерживает загрузку, скачивание, метаданные, удаление и аутентификацию через Google OAuth 2.0.
+Это backend для обмена файлами на Rust. Поддерживает загрузку, скачивание, метаданные, удаление и аутентификацию через Google OAuth 2.0.  
 
 ---
 
 ## 🚀 Возможности
 
-- 📥 Загрузка файлов на диск и сохранение метаданных в БД  
+- 📥 Загрузка файлов в AWS S3 и сохранение метаданных в БД  
 - 📤 Скачивание файлов с корректными заголовками  
 - 🔍 Поиск файлов по имени  
 - 🗑️ Удаление только своих файлов  
@@ -311,3 +319,12 @@ curl -X POST http://localhost:8080/api/files \
      -H "Cookie: auth_token=your_jwt_here" \
      -F "file=@path/to/yourfile.png"
 ```
+---
+
+## 🆕 Что нового
+
+- Переход с локального хранения на **AWS S3**
+- Метаданные теперь сохраняются и удаляются через базу данных
+- Добавлена проверка прав доступа при удалении файлов
+- Обработка MIME-типа вынесена из заголовков запроса
+
